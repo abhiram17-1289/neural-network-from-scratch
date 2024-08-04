@@ -17,8 +17,8 @@ def initialize_params(layers):
     L = len(layers)
 
     for l in range(1, L):
-        parameters["W" + str(l)] = np.random.randn((layers[l], layers[l-1])) * 0.01
-        parameters["b" + str(l)] = np.random.randn((layers[l], 1)) * 0.01
+        parameters["W" + str(l)] = np.random.randn(layers[l], layers[l-1]) * np.sqrt(2 / layers[l-1])  #Convergence very slow for normal initialization. Used He initialization
+        parameters["b" + str(l)] = np.zeros((layers[l], 1))
     
     return parameters
 
@@ -31,6 +31,8 @@ def forward_linear(A, W, b):
 
     Z = np.dot(W, A) + b
     cache = (A, W, b)
+
+    return Z, cache
 
 #Let us define the common activation functions
 
@@ -130,12 +132,16 @@ def backward_linear(dZ, linear_cache):
 
 #Sigmoid
 def sigmoid_backwards(dA, activation_cache):
-    der_sigmoid = sigmoid(activation_cache) * (1 - sigmoid(activation_cache)) #Derivative of a sigmoid
+    Z = activation_cache
+    s = 1 / (1 + np.exp(-Z))
+    der_sigmoid =  s * (1-s) #Derivative of a sigmoid
     return np.multiply(dA, der_sigmoid)
 
 #Tanh
 def tanh_backwards(dA, activation_cache):
-    der_tanh = 1 - (tanh(activation_cache) ** 2)
+    Z = activation_cache
+    t = np.tanh(Z)
+    der_tanh = 1 - t ** 2
     return np.multiply(dA, der_tanh)
 
 #ReLU
@@ -196,13 +202,15 @@ def backward_propagation(AL, Y, caches):
         grads["dW" + str(l+1)] = dW_temp #Weights of current Lth layer
         grads["db" + str(l+1)] = db_temp #Biases of current Lth layer
 
+        # print("Gradients",  grads["dA" + str(l)],  grads["dW" + str(l+1)], grads["db" + str(l+1)], sep= ", ")
+
     return grads
 
 #Finally, we update the parameters
 
 def update_parameters(params, grads, learning_rate):
 
-    parameters = copy.deepcopy(parameters)
+    parameters = copy.deepcopy(params)
     L = len(parameters) // 2
 
     for l in range(L): #Goes from 0 to L-1, do l+ 1
